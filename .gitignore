@@ -1,0 +1,16 @@
+md2pdf_native
+
+temp.html
+temp.pdf
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+venv/
+.env
