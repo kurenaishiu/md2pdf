@@ -1,7 +1,7 @@
 import Cocoa
 import WebKit
 
-class PDFConverter: NSObject, WKNavigationDelegate {
+class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     let sourceURL: URL
     let destURL: URL
     var webView: WKWebView!
@@ -35,6 +35,7 @@ class PDFConverter: NSObject, WKNavigationDelegate {
         window.isReleasedWhenClosed = false
         
         let config = WKWebViewConfiguration()
+        config.userContentController.add(self, name: "renderDone")
         
         let jsString = """
             var style = document.createElement('style');
@@ -45,6 +46,25 @@ class PDFConverter: NSObject, WKNavigationDelegate {
                 margin-right: \(marginRight)cm !important; 
             }`;
             document.head.appendChild(style);
+
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
+            script.onload = function() {
+                document.querySelectorAll('pre.mermaid').forEach(function(el) {
+                    var codeNode = el.querySelector('code');
+                    if (codeNode) {
+                        el.textContent = codeNode.textContent.trim();
+                    } else {
+                        el.textContent = el.textContent.trim();
+                    }
+                });
+                
+                mermaid.initialize({ startOnLoad: false, theme: 'default' });
+                mermaid.run({ querySelector: 'pre.mermaid' }).then(function() {
+                    window.webkit.messageHandlers.renderDone.postMessage("done");
+                });
+            };
+            document.head.appendChild(script);
         """
         
         let script = WKUserScript(source: jsString, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
@@ -63,11 +83,14 @@ class PDFConverter: NSObject, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("[Render] HTML loaded. Waiting for layout reflow...")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "renderDone" {
             self.generatePDF()
         }
     }
-
+    
     func generatePDF() {
         let printInfo = NSPrintInfo.shared
         
