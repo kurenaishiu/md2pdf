@@ -47,24 +47,22 @@ struct MD2PDF: ParsableCommand {
         let mdURL = URL(fileURLWithPath: inputPath)
         let parentDir = mdURL.deletingLastPathComponent()
 
-        // 1. 讀取原始 Markdown 檔案
         guard let originalContent = try? String(contentsOf: mdURL, encoding: .utf8) else {
-            print("❌ 無法讀取檔案: \(inputPath)")
+            print("File not found: \(inputPath)")
             throw ExitCode.failure
         }
         
-        // 2. 處理 @import
-        print("[0/2] 正在解析 @import 語法...")
-        var attachments: [String: URL] = [:] // 👈 準備一本對照表
+        print("[0/2] Parsing Markdown and resolving @import statements...")
+        var attachments: [String: URL] = [:] 
         let finalMdContent = resolveImports(in: originalContent, baseDirectory: parentDir, attachments: &attachments)
         
-        print("[1/2] 正在透過 Pandoc 轉換 Markdown...")
+        print("[1/2] Converting Markdown to HTML...")
         guard let htmlString = convertMarkdownToHTML(mdContent: finalMdContent) else {
-            print("❌ Pandoc 轉換失敗")
+            print("Pandoc conversion failed")
             throw ExitCode.failure
         }
 
-        print("[2/2] 正在渲染 PDF (WebKit)...")
+        print("[2/2] Rendering PDF (WebKit)...")
         let converter = PDFConverter(
             htmlContent: htmlString,
             baseURL: parentDir,
@@ -87,7 +85,7 @@ struct MD2PDF: ParsableCommand {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         
         guard let cssPath = Bundle.module.path(forResource: "github-markdown-light", ofType: "css") else {
-            print("❌ 找不到綁定的 CSS 檔案")
+            print("❌ File not found: github-markdown-light.css")
             return nil
         }
         
@@ -113,7 +111,7 @@ struct MD2PDF: ParsableCommand {
 
             if let data = mdContent.data(using: .utf8) {
                 try inputPipe.fileHandleForWriting.write(contentsOf: data)
-                try inputPipe.fileHandleForWriting.close() // 寫完必須關閉，Pandoc 才會開始轉檔
+                try inputPipe.fileHandleForWriting.close()
             }
 
             let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
@@ -122,13 +120,13 @@ struct MD2PDF: ParsableCommand {
             if process.terminationStatus != 0 {
                 let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
                 let errorString = String(data: errorData, encoding: .utf8) ?? "未知錯誤"
-                print("❌ Pandoc 報錯：\n\(errorString)")
+                print("Error:\n\(errorString)")
                 return nil
             }
 
             return String(data: data, encoding: .utf8)
         } catch {
-            print("[Error] 執行 Pandoc 時發生錯誤: \(error)")
+            print("[Error] Error occurred while running Pandoc: \(error)")
             return nil
         }
     }
@@ -159,14 +157,12 @@ struct MD2PDF: ParsableCommand {
             } else if ["png", "jpg", "jpeg", "gif", "svg"].contains(fileExtension) {
                 replacementString = "![](\(fileName))"
             } else if fileExtension == "pdf" {
-                // 👇 產生一組純字母數字的 ID，絕對不會被換行或誤判
                 let id = "ATTACHMENT" + UUID().uuidString.replacingOccurrences(of: "-", with: "")
                 attachments[id] = fileURL
                 
-                // 放上不換行的隱形標籤
                 replacementString = "\n\n<div style=\"page-break-before: always; page-break-after: always; font-size: 8px; color: white; white-space: nowrap;\">\(id)</div>\n\n"
             } else {
-                replacementString = "> ⚠️ [MD2PDF 錯誤] 不支援的 @import 檔案格式: \(fileName)"
+                replacementString = "> [MD2PDF Error] File not supported: \(fileName)"
             }
             
             if !replacementString.isEmpty {
@@ -307,14 +303,14 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     @objc func printOperationDidRun(_ printOperation: NSPrintOperation, success: Bool, contextInfo: UnsafeMutableRawPointer?) {
         let duration = (CFAbsoluteTimeGetCurrent() - self.startTime) * 1000
         if success {
-            print(String(format: "✅ PDF 網頁渲染完成！耗時 %.2f ms.", duration))
+            print(String(format: "✅ PDF rendered successfully! Duration: %.2f ms.", duration))
             
             // 👉 在程式結束前，攔截它並呼叫蓋章功能
             self.addPageNumbers(to: self.destURL)
             
             
         } else {
-            print("❌ 錯誤：PDF 渲染失敗")
+            print("❌ Error: PDF rendering failed")
             
         }
     }
@@ -330,7 +326,7 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     }
 
     private func addPageNumbers(to pdfURL: URL) {
-        print("[3/3] 正在透過 PDFKit 處理附件與注入頁碼...")
+        print("[3/3] Rendering page numbers with PDFKit...")
         
         // 🔥 關鍵 1：用陣列把附件的生命週期硬撐到存檔結束
         var keepAliveDocs: [PDFDocument] = []
@@ -338,7 +334,7 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         
         guard let pdfData = try? Data(contentsOf: pdfURL),
               let document = PDFDocument(data: pdfData) else {
-            print("❌ 無法讀取主文件 PDF 以加入頁碼")
+            print("Cannot read main PDF file to add page numbers")
             return
         }
 
@@ -356,7 +352,7 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             for (id, fileURL) in self.attachments {
                 if pageText.contains(id) {
                     foundAttachment = true
-                    print("➡️ 成功抓取到附件標籤，準備插入：\(fileURL.lastPathComponent)")
+                    print("Successfully found attachment tag, preparing to insert: \(fileURL.lastPathComponent)")
                     
                     document.removePage(at: i)
                     
@@ -373,7 +369,7 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                         }
                         i += insertDoc.pageCount
                     } else {
-                        print("❌ 讀不到附件檔案，請檢查路徑：\(fileURL.path)")
+                        print("Cannot read attachment file, please check the path: \(fileURL.path)")
                     }
                     break 
                 }
@@ -384,15 +380,13 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             }
         }
 
-        // 👇 重新計算總頁數（扣掉附件）與當前頁碼
         let totalPages = document.pageCount
-        let mainPageCount = totalPages - attachmentPages.count // 真正的分母
-        var currentMainPage = 0 // 真正的分子
+        let mainPageCount = totalPages - attachmentPages.count 
+        var currentMainPage = 0
 
         for i in 0..<totalPages {
             guard let page = document.page(at: i) else { continue }
             
-            // 👇 如果這頁在「附件名單」裡，直接跳過，不蓋頁碼也不增加分子
             if attachmentPages.contains(i) {
                 continue
             }
@@ -401,7 +395,6 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             
             let bounds = page.bounds(for: .mediaBox)
             
-            // 👇 頁碼文字改用我們新算的分子跟分母
             let text = "\(currentMainPage) / \(mainPageCount)"
             let font = NSFont(name: "Helvetica", size: 10) ?? NSFont.systemFont(ofSize: 10)
             
@@ -431,22 +424,21 @@ class PDFConverter: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         }
         
         if document.write(to: pdfURL) {
-            print("✅ 頁碼與附件寫入完成！")
-            keepAliveDocs.removeAll() // 存檔完畢，可以安心釋放記憶體了
+            print("Completed writing page numbers and attachments!")
+            keepAliveDocs.removeAll() 
             self.sendSystemNotification()
             exit(0)
         } else {
-            print("❌ 頁碼存檔失敗")
+            print("Failed to save page numbers")
             exit(1)
         }
     }
 
     private func sendSystemNotification() {
         let duration = (CFAbsoluteTimeGetCurrent() - self.startTime) * 1000
-        let message = String(format: "PDF 轉換完成！總耗時：%.2f ms", duration)
+        let message = String(format: "PDF conversion completed! Total time: %.2f ms", duration)
         let fileName = self.destURL.lastPathComponent
         
-        // 組裝 AppleScript 指令
         let script = "display notification \"\(message)\" with title \"MD2PDF\" subtitle \"\(fileName)\""
         
         let process = Process()
