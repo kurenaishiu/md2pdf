@@ -38,55 +38,59 @@ Ensure the following are installed on your Mac:
 
   Run the following commands in your terminal to move the compiled binary to your local bin directory:
   ```bash
-    mkdir -p ~/.local/bin
-    cp .build/release/md2pdf ~/.local/bin/md2pdf
+  mkdir -p ~/.local/bin
+  cp .build/release/md2pdf ~/.local/bin/md2pdf
   ```
   **Important:** Ensure `~/.local/bin` is in your system's `$PATH`. You can add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.zshrc` and run `source ~/.zshrc` to apply the changes.
 
   ### 3.2 VS Code Task Automation (The Ultimate Workflow)
   To compile your Markdown to PDF with a single keyboard shortcut (`Cmd + Shift + P`), add this to your VS Code `.vscode/tasks.json`:
   ```json
-    {
-        "version": "2.0.0",
-        "tasks": [
-            {
-                "label": "MD2PDF",
-                "type": "shell",
-                "command": "md2pdf",
-                "args": [
-                    "${file}"
-                ],
-                "group": {
-                    "kind": "build",
-                    "isDefault": true
-                },
-                "presentation": {
-                    "echo": false,
-                    "reveal": "silent",
-                    "focus": false,
-                    "panel": "shared",
-                    "showReuseMessage": false,
-                    "clear": true
-                },
-                "problemMatcher": []
-            }
-        ]
-    }
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "MD2PDF",
+            "type": "shell",
+            "command": "md2pdf",
+            "args": [
+                "${file}"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": false,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}
   ``` 
   ### 3.3 Custom Keybinding
   To achieve the true "One-Click Export" experience, bind the task to a custom keyboard shortcut (e.g., `Cmd + Alt + P`).
 
   Open your VS Code `keybindings.json` (Command Palette -> `Preferences: Open Keyboard Shortcuts (JSON)`) and add the following object to the array:
   ```json 
-    {
-        "key": "cmd+alt+p",
-        "command": "workbench.action.tasks.runTask",
-        "args": "MD2PDF",
-        "when": "editorLangId == 'markdown'"
-    }
+{
+    "key": "cmd+alt+p",
+    "command": "workbench.action.tasks.runTask",
+    "args": "MD2PDF",
+    "when": "editorLangId == 'markdown'"
+}
   ```
+
+  You can now generate PDFs directly in VS Code by pressing `Cmd + Alt + P` within any `.md` file.
+
 </details>
-Now you can generate pdf file simply press `cmd+alt+p` in md file.
+
+
 
 
 ## Usage
