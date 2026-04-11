@@ -1,19 +1,22 @@
 # MD2PDF
 
-A high-performance Markdown to PDF conversion pipeline optimized for MacOS. 
-By leveraging the **Native WebKit Engine** instead of heavy Chrome Headless instances, and utilizing **PyMuPDF** for post-processing.
+A high-performance Markdown to PDF conversion pipeline optimized for macOS. 
+By leveraging the **Native WebKit Engine** for rendering, **Pandoc** for HTML conversion, and **PDFKit** for post-processing and native merging.
 
 ## Features
 - **Extreme Speed**: Powered by native WebKit API for near-instant rendering.
 - **Dynamic Margins**: Full control over Top, Bottom, Left, and Right margins via CLI arguments.
+- **Smart `@import` Resolution**: Seamlessly embed other Markdown files (`@import "file.md"`) or images (`@import "image.png"`) directly into your document.
+- **Native PDF Attachments**: Use `@import "appendix.pdf"` to seamlessly append PDFs at your document.
+- **Intelligent Page Numbering**: Automatically injects centered page numbers (e.g., `1 / 5`) into the main document. PDF attachments are excluded from both the page count and numbering.
+- **Native Notifications**: Triggers a macOS system notification the moment your conversion is complete.
 
-**Note:** For further visual adjustments (font size, colors, or line height), simply edit the `github-markdown-light.css` file.
+**Note:** For further visual adjustments (font size, colors, or line height), simply edit the `/md2pdf/github-markdown-light.cssgithub-markdown-light.css` file.
 
 ## Prerequisites
 Ensure the following are installed on your Mac:
 1. **Pandoc**: `brew install pandoc`
-2. **Python 3 & PyMuPDF**: `pip install pymupdf`
-3. **Swift**: Pre-installed on MacOS.
+2. **Swift**: Pre-installed on MacOS.
 
 ## Installation
 1. **Clone the repository**:
@@ -22,29 +25,21 @@ Ensure the following are installed on your Mac:
    cd MD2PDF
    ```
 
-2. **Compile the Rendering Engine:**
-This creates a binary `md2pdf_native`.
+2. **Compile the CLI Tool:**
+    Build the project using Swift Package Manager..
     ```bash
-    swiftc md2pdf_native.swift -o md2pdf_native
+    swift build -c release
     ```
 
 <details>
   <summary><b> 3. (Optional) Create a Global Command & VS Code Integration </b></summary>
   
-  Create a lightweight bash wrapper script in your user directory (`~/.local/bin`) and configure VS Code to call it directly.
+  ### 3.1 Install the Binary Globally
 
-  ### 3.1 Create the Wrapper Script
-
-  Run the following commands in your terminal to create a global command:
+  Run the following commands in your terminal to move the compiled binary to your local bin directory:
   ```bash
     mkdir -p ~/.local/bin
-
-    cat << 'EOF' > ~/.local/bin/md2pdf
-    #!/bin/bash
-    python3 "/PATH/TO/md2pdf.py" "$@"
-    EOF
-
-    chmod +x ~/.local/bin/md2pdf
+    cp .build/release/md2pdf ~/.local/bin/md2pdf
   ```
   **Important:** Ensure `~/.local/bin` is in your system's `$PATH`. You can add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.zshrc` and run `source ~/.zshrc` to apply the changes.
 
@@ -53,11 +48,11 @@ This creates a binary `md2pdf_native`.
   ```json
     {
         "version": "2.0.0",
-        "tasks":[
+        "tasks": [
             {
                 "label": "MD2PDF",
-                "type": "process",
-                "command": "${env:HOME}/.local/bin/md2pdf",
+                "type": "shell",
+                "command": "md2pdf",
                 "args": [
                     "${file}"
                 ],
@@ -66,9 +61,14 @@ This creates a binary `md2pdf_native`.
                     "isDefault": true
                 },
                 "presentation": {
+                    "echo": false,
                     "reveal": "silent",
-                    "panel": "shared"
-                }
+                    "focus": false,
+                    "panel": "shared",
+                    "showReuseMessage": false,
+                    "clear": true
+                },
+                "problemMatcher": []
             }
         ]
     }
@@ -86,27 +86,36 @@ This creates a binary `md2pdf_native`.
     }
   ```
 </details>
+Now you can generate pdf file simply press `cmd+alt+p` in md file.
 
 
 ## Usage
 
-Basic Conversion (Default 2cm margins)
+### Local Execution (Without Global Install)
+If you skipped Step 3 and didn't install the binary globally, you can run it directly from the project directory after building:
+
+```bash
+.build/release/md2pdf document.md
+```
+
+### Global Execution
+If you copied the binary to your local bin directory (Step 3), you can run the tool from anywhere in your terminal:
+
 ```bash
 md2pdf document.md
 ```
 
-Specify margins in centimeters (cm):
+Advanced Options
+
 ```bash
 md2pdf document.md --margin-top 2.5 --margin-bottom 1.5 --margin-left 3
 ```
 
 ## Project Structure
 
-- `md2pdf.py`: Main pipeline controller (Pandoc conversion & PDF post-processing).
+- `Sources/md2pdf/md2pdf.swift`: Pure Swift-based CLI, WebKit rendering engine, and PDFKit post-processor.
 
-- `md2pdf_native.swift`: Swift-based WebKit rendering engine.
-
-- `github-markdown-light.css`: Print-optimized stylesheet.
+- `Sources/md2pdf/github-markdown-light.css`: Print-optimized stylesheet.
 
 ## License
 MIT License.
