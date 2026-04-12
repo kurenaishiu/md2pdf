@@ -1,4 +1,5 @@
 md2pdf_native
+*.js
 
 temp.html
 temp.pdf
