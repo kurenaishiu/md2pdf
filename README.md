@@ -32,7 +32,14 @@ PDF（程式偵測到檔案寫完且內容穩定）
 | `row-header-table.lua` | Pandoc Lua 過濾器：表格標題列/欄與換頁標記 |
 | `mask_pdf_corners.py` | 轉完後清除頁角文字的 Python 腳本 |
 
-主程式用 `#filePath` 找旁邊的 CSS、Lua 與 Python 檔，所以**這些檔案必須和 `md2safari.swift` 放在同一個資料夾**。
+執行檔會依序在這些位置尋找 CSS、Lua 與 Python 檔，找到第一個「三個檔案都齊全」的資料夾就使用：
+
+1. 環境變數 `MD2PDF_HOME` 指定的資料夾
+2. 執行檔所在資料夾的上一層（也就是 `bin/..`，專案根目錄）
+3. 執行檔所在的資料夾
+4. 原始碼所在資料夾（僅在用絕對路徑編譯時有效）
+
+所以只要**執行檔放在專案的 `bin/` 裡**，用相對或絕對路徑編譯都可以。若要把執行檔複製到別處（例如 `~/.local/bin`），請設定 `MD2PDF_HOME` 指向專案資料夾。
 
 ## 事前需求
 
@@ -50,14 +57,14 @@ PDF（程式偵測到檔案寫完且內容穩定）
 ./build.sh
 ```
 
-等同於：
+等同於在專案資料夾裡執行：
 
 ```bash
-swiftc -O /Users/kurenai/Documents/MD2PDF/md2safari.swift -o /Users/kurenai/Documents/MD2PDF/bin/md2pdf
+swiftc -O md2safari.swift -o bin/md2pdf
 ```
 
-> [!IMPORTANT]
-> 一定要用**絕對路徑**編譯。用相對路徑的話 `#filePath` 也是相對的，執行時會找不到 CSS / Lua / Python 檔。改了 `md2safari.swift` 之後要重新執行 `./build.sh`。
+> [!NOTE]
+> 改了 `md2safari.swift` 之後要重新編譯。路徑用相對或絕對都可以，因為執行檔是靠自己的位置（`bin/..`）找輔助檔案的。
 
 ## 使用方式
 
@@ -154,7 +161,7 @@ VS Code 的 `tasks.json` 相同，只是 `MD2PDF_RETURN_APP` 改成 `"Visual Stu
 | `Timed out waiting for the PDF after 2 minutes` | 2 分鐘內沒有在 Safari 存檔。重新執行並盡快 `Cmd+P` 存到畫面提示的路徑 |
 | 存檔路徑不對 | 要存成提示的 `Print from Safari and save the PDF to:` 那個路徑（與 `.md` 同資料夾） |
 | `The saved file is not a valid PDF` | 存的檔案不是 PDF 格式，請在列印對話框選「存儲為 PDF」 |
-| `Could not find .../mask_pdf_corners.py`（或 CSS、Lua） | 編譯時用了相對路徑，或這些檔案被搬離 `md2safari.swift` 所在資料夾。用 `./build.sh` 重新編譯 |
+| `Could not locate the MD2PDF helper files` | 找不到 CSS / Lua / Python 檔。確認執行檔在專案的 `bin/` 裡，或設定環境變數 `MD2PDF_HOME` 指向專案資料夾 |
 | `Failed to launch Pandoc` / `Pandoc failed` | 未安裝 Pandoc，或 `pandoc` 不在 PATH。執行 `brew install pandoc`；從編輯器啟動時 PATH 可能不含 `/opt/homebrew/bin` |
 | `PDF masking failed` / 找不到 python | conda 環境 `MD2PDF` 不存在或沒裝 PyMuPDF：`pip install pymupdf`，或修改 `pythonPath` |
 | 轉完跳到錯的編輯器 | `tasks.json` 的 `MD2PDF_RETURN_APP` 設錯或沒設（預設是 VS Code） |

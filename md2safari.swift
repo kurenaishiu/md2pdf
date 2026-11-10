@@ -206,15 +206,35 @@ let documentTitle = inputURL.deletingPathExtension().lastPathComponent
 let pdfURL = currentDirectoryURL
     .appendingPathComponent(inputURL.deletingPathExtension().lastPathComponent)
     .appendingPathExtension("pdf")
-let maskScriptURL = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent()
-    .appendingPathComponent("mask_pdf_corners.py")
-let rowHeaderFilterURL = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent()
-    .appendingPathComponent("row-header-table.lua")
-let cssURL = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent()
-    .appendingPathComponent("github-markdown-light.css")
+// Locate the project folder that holds the helper files (CSS, Lua filter, Python mask script).
+// Candidates, in order: $MD2PDF_HOME, the folder above the executable (bin/..),
+// the executable's own folder, and the folder of this source file (#filePath, only
+// reliable when compiled with an absolute path).
+let helperFileNames = ["mask_pdf_corners.py", "row-header-table.lua", "github-markdown-light.css"]
+let resourceDirectory: URL = {
+    var candidates: [URL] = []
+    if let home = ProcessInfo.processInfo.environment["MD2PDF_HOME"], !home.isEmpty {
+        candidates.append(URL(fileURLWithPath: home))
+    }
+    if let executableURL = Bundle.main.executableURL?.resolvingSymlinksInPath() {
+        let executableDirectory = executableURL.deletingLastPathComponent()
+        candidates.append(executableDirectory.deletingLastPathComponent())
+        candidates.append(executableDirectory)
+    }
+    if #filePath.hasPrefix("/") {
+        candidates.append(URL(fileURLWithPath: #filePath).deletingLastPathComponent())
+    }
+    for candidate in candidates {
+        let hasAllFiles = helperFileNames.allSatisfy {
+            FileManager.default.fileExists(atPath: candidate.appendingPathComponent($0).path)
+        }
+        if hasAllFiles { return candidate }
+    }
+    fail("Could not locate the MD2PDF helper files (\(helperFileNames.joined(separator: ", "))). Keep the binary in <project>/bin/ or set MD2PDF_HOME.")
+}()
+let maskScriptURL = resourceDirectory.appendingPathComponent("mask_pdf_corners.py")
+let rowHeaderFilterURL = resourceDirectory.appendingPathComponent("row-header-table.lua")
+let cssURL = resourceDirectory.appendingPathComponent("github-markdown-light.css")
 let cssPath = cssURL.path
 // App to return to after the PDF is saved. Set MD2PDF_RETURN_APP in the editor task
 // (e.g. "Visual Studio Code" or "Antigravity IDE"); defaults to VS Code.
