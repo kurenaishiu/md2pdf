@@ -218,6 +218,43 @@ body table {
   font-variant: tabular-nums;
 }
 
+body .nextpage-break {
+  break-before: page;
+  page-break-before: always;
+}
+
+body .column-header-table table tbody td:first-child {
+  font-weight: 600;
+}
+
+body .column-header-table table thead th {
+  font-weight: 400;
+}
+
+body .column-header-table table thead th:first-child {
+  font-weight: 600;
+}
+
+body .column-header-table table tbody tr:nth-child(odd) {
+  background-color: #f6f8fa;
+}
+
+body .column-header-table table tbody tr:nth-child(even) {
+  background-color: #ffffff;
+}
+
+body .column-header-table table tbody tr:nth-child(odd) > td {
+  background-color: #f6f8fa;
+}
+
+body .column-header-table table tbody tr:nth-child(even) > td {
+  background-color: #ffffff;
+}
+
+body .no-header-table table thead th {
+  font-weight: 400;
+}
+
 body td,
 body th {
   padding: 0;
@@ -575,6 +612,7 @@ body dl dd {
 
 body table th {
   font-weight: 600;
+  text-align: left;
 }
 
 body table th,
@@ -587,12 +625,12 @@ body table td>:last-child {
   margin-bottom: 0;
 }
 
-body table tr {
+body table tbody tr {
   background-color: #ffffff;
   border-top: 1px solid #d1d9e0b3;
 }
 
-body table tr:nth-child(2n) {
+body table tbody tr:nth-child(2n) {
   background-color: #f6f8fa;
 }
 
@@ -1128,10 +1166,25 @@ body .highlight pre:has(+.zeroclipboard-container) {
     @page {
         margin: 2.0cm !important;
     }
+
+    body table {
+        display: table;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+        table-layout: auto;
+    }
+
+    body table th,
+    body table td {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-all;
+    }
+
 }
 
 * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
 }
-
