@@ -72,7 +72,7 @@ swiftc -O md2safari.swift -o bin/md2pdf
 
 ```bash
 cd 檔案所在資料夾
-/Users/kurenai/Documents/MD2PDF/bin/md2pdf document.md
+/path/to/MD2PDF/bin/md2pdf document.md
 ```
 
 PDF 會輸出到**目前工作目錄**，檔名與 `.md` 相同。程式只接受一個參數（輸入檔），沒有其他選項。
@@ -108,7 +108,7 @@ PDF 會輸出到**目前工作目錄**，檔名與 `.md` 相同。程式只接�
         {
             "label": "MD2PDF",
             "type": "shell",
-            "command": "/Users/kurenai/Documents/MD2PDF/bin/md2pdf",
+            "command": "/path/to/MD2PDF/bin/md2pdf",
             "args": ["${file}"],
             "options": {
                 "cwd": "${fileDirname}",
@@ -130,6 +130,9 @@ PDF 會輸出到**目前工作目錄**，檔名與 `.md` 相同。程式只接�
     ]
 }
 ```
+
+> [!IMPORTANT]
+> `command` 裡的 `/path/to/MD2PDF` 要換成你自己的實際專案路徑，且必須是絕對路徑（task 裡不能用 `~`）。
 
 VS Code 的 `tasks.json` 相同，只是 `MD2PDF_RETURN_APP` 改成 `"Visual Studio Code"`。改完設定後，執行 `Developer: Reload Window` 讓編輯器重新讀取。
 
